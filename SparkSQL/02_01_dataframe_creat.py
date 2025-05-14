@@ -32,3 +32,5 @@ if __name__ == '__main__':
 
     df.printSchema()
     df.show()
+
+    # 第二次推送
