@@ -1,0 +1,6 @@
+laozhang,20,male
+laowang,21,female
+laoliu,28,female
+laosi,24,female
+laoban,30,male
+laohong,36,male
