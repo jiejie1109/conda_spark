@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 import os
 from pyspark.sql.types import StructType, StringType, IntegerType
+import pandas as pd
 
 if __name__ == '__main__':
     os.environ['JAVA_HOME'] = 'D:/evm/java'
@@ -17,20 +18,16 @@ if __name__ == '__main__':
         getOrCreate()
 
     sc = spark.sparkContext
-    # 基于RDD转化为为Dataframe
 
-    rdd = sc.textFile("../datas/sougou/people.txt"). \
-        map(lambda x: x.split(",")). \
-        map(lambda x: (x[0], int(x[1])))
+    # 基于pandas的Dataframe构建sparksql的dataframe
+    pdf = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "name": ["fengjing", "huangquan", "baie"],
+            "age": [20, 30, 40]
+        }
+    )
 
-    # 构建表结构的描述对象:structType
-    schema = StructType().add("name", StringType(), nullable=True). \
-        add("id", IntegerType(), nullable=True)
-
-    # 基于StructType对象去构建RDD到DF的转换
-    df = spark.createDataFrame(rdd, schema=schema)
-
+    df = spark.createDataFrame(pdf)
     df.printSchema()
     df.show()
-
-

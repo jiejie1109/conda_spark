@@ -23,14 +23,15 @@ if __name__ == '__main__':
         map(lambda x: x.split(",")). \
         map(lambda x: (x[0], int(x[1])))
 
-    # 构建表结构的描述对象:structType
-    schema = StructType().add("name", StringType(), nullable=True). \
-        add("id", IntegerType(), nullable=True)
+    # toDF的方式
+    df1 = rdd.toDF(['name', 'age'])
+    df1.printSchema()
+    df1.show()
 
-    # 基于StructType对象去构建RDD到DF的转换
-    df = spark.createDataFrame(rdd, schema=schema)
+    # toDF的方式2
+    schema = StructType().add('name', StringType(), nullable=True). \
+        add('age', IntegerType(), nullable=False)
 
-    df.printSchema()
-    df.show()
-
-
+    df2 = rdd.toDF(schema=schema)
+    df2.printSchema()
+    df2.show()
