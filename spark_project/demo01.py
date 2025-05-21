@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 import os
+from pyspark.storagelevel import StorageLevel
 from pyspark.sql.types import StructType, StringType, IntegerType
 import pandas as pd
 from pyspark.sql import functions as F
@@ -69,7 +70,9 @@ if __name__ == '__main__':
     top3_province = province_sale_df.limit(3).select("storeProvince")
 
     top3_province_df_join = df.join(top3_province, on="storeProvince")
-    top3_province_df_join.show(truncate=False)
+    # 设置缓存，并设置存储级别
+    top3_province_df_join.persist(StorageLevel.MEMORY_AND_DISK)
+    # top3_province_df_join.show(truncate=False)
 
     top3_province_df_result = top3_province_df_join.groupBy(
         ['storeProvince', 'storeID', F.unix_timestamp(df['dateTS'].substr(0, 10), "yyyy-MM-dd").alias("day")]). \
@@ -79,3 +82,35 @@ if __name__ == '__main__':
         groupBy("storeProvince").count()
 
     top3_province_df_result.show()
+
+    # TODO TOP3各省份中，各个省份的平均单价
+    top3_province_order_avg_df = (
+        top3_province_df_join.groupBy("storeProvince")
+        .agg(F.avg("receivable").alias("money"))
+        .withColumn("money", F.round("money", 2))
+        .orderBy(F.col("money").desc())
+    )
+
+    top3_province_order_avg_df.show()
+
+    # TODO 需求4: TOP3各个省份中，支付比例
+    top3_province_pay_df = (
+        top3_province_df_join.groupBy("storeProvince", "payType")
+        .agg(F.count("payType").alias("count"))
+        .orderBy(F.col("storeProvince"))
+    )
+
+    top3_province_df_join.createTempView("province_pay")
+    spark.sql("""
+            SELECT 
+                storeProvince, 
+                payType, 
+                round(COUNT(*) * 1.0 / SUM(COUNT(*)) OVER (PARTITION BY storeProvince),2) AS percent
+            FROM province_pay
+            GROUP BY storeProvince, payType;
+    """).show()
+
+    # top3_province_pay_df.show()
+
+    # 释放缓存
+    top3_province_df_join.unpersist()
